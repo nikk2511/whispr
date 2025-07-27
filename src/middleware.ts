@@ -11,13 +11,13 @@ export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
 
   // Redirect to dashboard if the user is already authenticated
-  // and trying to access sign-in, sign-up, or home page
+  // and trying to access sign-in, sign-up, or verify pages
+  // Note: Allow authenticated users to access home page (/) for logout redirect
   if (
     token &&
     (url.pathname.startsWith('/sign-in') ||
       url.pathname.startsWith('/sign-up') ||
-      url.pathname.startsWith('/verify') ||
-      url.pathname === '/')
+      url.pathname.startsWith('/verify'))
   ) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }

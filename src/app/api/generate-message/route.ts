@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    console.log('Suggest messages API called');
+    console.log('API endpoint called - generate-message (Gemini)');
     
     // Check if API key exists
     if (!process.env.GEMINI_API_KEY) {
@@ -14,9 +14,19 @@ export async function POST(req: Request) {
       );
     }
 
-    const prompt = "Create 3 short, engaging anonymous message suggestions separated by '||'. Each message should be under 60 characters, positive, friendly, and suitable for anonymous messaging. Keep them concise and simple. Example format: 'What's your favorite hobby?||What made you smile today?||Share a fun fact about yourself!'";
+    const body = await req.json();
+    console.log('Request body:', body);
+    
+    const { topic = '', tone = 'friendly', length = 'medium', messageType = 'general' } = body;
 
-    console.log('Using prompt:', prompt);
+    // Create simple prompt
+    let prompt = `Write a ${length} anonymous message in a ${tone} tone.`;
+    if (topic) {
+      prompt += ` The topic should be related to: ${topic}.`;
+    }
+    prompt += ' Keep it positive, respectful, and appropriate for anonymous messaging. Write only the message content, nothing else.';
+
+    console.log('Generated prompt:', prompt);
 
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -26,19 +36,19 @@ export async function POST(req: Request) {
     const response = await result.response;
     const generatedText = response.text().trim();
     
-    console.log('Generated suggestions:', generatedText);
+    console.log('Generated text:', generatedText);
 
     return NextResponse.json({ message: generatedText });
     
   } catch (error) {
-    console.error('Error in suggest-messages API:', error);
+    console.error('Error in generate-message API:', error);
     
     return NextResponse.json(
       { 
-        error: 'Failed to generate suggestions',
+        error: 'Failed to generate message',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
   }
-}
+} 

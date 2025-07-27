@@ -1,6 +1,6 @@
-# Mystery Message 
+# AnonChat 
 ## Overview
-The Mystery Message App is a secure and anonymous messaging platform built with Next.js. This app allows users to send anonymous messages to anyone without sharing their personal details. It utilizes advanced features to ensure user privacy and message integrity, including unique usernames, unique message IDs for message deletion, JSON Web Tokens (JWT) for authentication, and OTP-based verification through Resend Mail.
+The AnonChat App is a secure and anonymous messaging platform built with Next.js. This app allows users to send anonymous messages to anyone without sharing their personal details. It utilizes advanced features to ensure user privacy and message integrity, including unique usernames, unique message IDs for message deletion, JSON Web Tokens (JWT) for authentication, and OTP-based verification through Resend Mail.
 
 # Features
 ## Anonymous Messaging
