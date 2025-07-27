@@ -282,7 +282,7 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground">{testimonial.role}</p>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground italic">"{testimonial.content}"</p>
+                    <p className="text-muted-foreground italic">&quot;{testimonial.content}&quot;</p>
                   </CardContent>
                 </Card>
               </motion.div>

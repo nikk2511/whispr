@@ -320,7 +320,7 @@ export default function SendMessage() {
                 </Badge>
               </CardTitle>
               <CardDescription>
-                Let Google's Gemini AI help you craft the perfect anonymous message with customizable options
+                Let Google&apos;s Gemini AI help you craft the perfect anonymous message with customizable options
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

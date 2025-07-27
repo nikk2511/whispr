@@ -220,7 +220,7 @@ export default function SignUpForm() {
                       />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      We'll send you a verification code
+                      We&apos;ll send you a verification code
                     </p>
                     <FormMessage />
                   </FormItem>

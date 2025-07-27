@@ -213,7 +213,7 @@ export default function SignInForm() {
             </div>
             
             <p className="text-muted-foreground">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link 
                 href="/sign-up" 
                 className="font-semibold text-primary hover:text-primary/80 transition-colors"

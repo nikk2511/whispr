@@ -318,7 +318,7 @@ function UserDashboard() {
                 <CardTitle>Message Settings</CardTitle>
               </div>
               <CardDescription>
-                Control whether you're accepting new messages
+                Control whether you&apos;re accepting new messages
               </CardDescription>
             </CardHeader>
             <CardContent>
