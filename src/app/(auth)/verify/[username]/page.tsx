@@ -1,82 +1,73 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { ApiResponse } from '@/types/ApiResponse';
-import { zodResolver } from '@hookform/resolvers/zod';
-import axios, { AxiosError } from 'axios';
 import { useParams, useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
-import { verifySchema } from '@/schemas/verifySchema';
+import { useEffect } from 'react';
+import { MessageSquare } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function VerifyAccount() {
   const router = useRouter();
   const params = useParams<{ username: string }>();
   const { toast } = useToast();
-  const form = useForm<z.infer<typeof verifySchema>>({
-    resolver: zodResolver(verifySchema),
-  });
 
-  const onSubmit = async (data: z.infer<typeof verifySchema>) => {
-    try {
-      const response = await axios.post<ApiResponse>(`/api/verify-code`, {
-        username: params.username,
-        code: data.code,
-      });
+  useEffect(() => {
+    // Show notification and redirect after a short delay
+    toast({
+      title: 'Verification Not Required! 🎉',
+      description: 'Your account is automatically verified. You can sign in directly.',
+    });
 
-      toast({
-        title: 'Success',
-        description: response.data.message,
-      });
-
+    // Redirect to sign-in after 3 seconds
+    const timer = setTimeout(() => {
       router.replace('/sign-in');
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiResponse>;
-      toast({
-        title: 'Verification Failed',
-        description:
-          axiosError.response?.data.message ??
-          'An error occurred. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [router, toast]);
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
-        <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-6">
-            Verify Your Account
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <div className="bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl p-8 text-center">
+          {/* Header */}
+          <div className="flex items-center justify-center space-x-2 mb-6">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <MessageSquare className="h-6 w-6" />
+            </div>
+            <span className="text-2xl font-bold gradient-text">AnonChat</span>
+          </div>
+          
+          <h1 className="text-2xl font-bold mb-4 text-green-600">
+            Account Ready! ✅
           </h1>
-          <p className="mb-4">Enter the verification code sent to your email</p>
+          
+          <p className="text-muted-foreground mb-6">
+            Email verification has been disabled. Your account for{' '}
+            <span className="font-semibold text-foreground">
+              {params.username}
+            </span>{' '}
+            is automatically verified and ready to use.
+          </p>
+
+          <p className="text-sm text-muted-foreground mb-6">
+            Redirecting you to sign in page in a few seconds...
+          </p>
+
+          <Button 
+            onClick={() => router.replace('/sign-in')}
+            className="w-full"
+          >
+            Go to Sign In
+          </Button>
         </div>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              name="code"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Verification Code</FormLabel>
-                  <Input {...field} />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit">Verify</Button>
-          </form>
-        </Form>
-      </div>
+      </motion.div>
     </div>
   );
 }

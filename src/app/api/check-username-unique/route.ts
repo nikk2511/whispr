@@ -8,7 +8,18 @@ const UsernameQuerySchema = z.object({
 });
 
 export async function GET(request: Request) {
-  await dbConnect();
+  try {
+    await dbConnect();
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    return Response.json(
+      {
+        success: false,
+        message: 'Database connection failed. Please try again.',
+      },
+      { status: 500 }
+    );
+  }
 
   try {
     const { searchParams } = new URL(request.url);
@@ -61,7 +72,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         success: false,
-        message: 'Error checking username',
+        message: 'Unable to check username availability. Please try again.',
       },
       { status: 500 }
     );

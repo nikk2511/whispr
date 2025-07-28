@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
 type ConnectionObject = {
-
     isConnected ?: number
 }
 
@@ -16,7 +15,7 @@ async function dbConnect(): Promise<void>
     }
     if (!process.env.MONGODB_URI) {
         console.error('MONGODB_URI is not set');
-        // process.exit(1);
+        throw new Error('MONGODB_URI environment variable is not set');
     }
     try {
         // console.log(process.env.MONGODB_URI)
@@ -28,7 +27,8 @@ async function dbConnect(): Promise<void>
 
     } catch (error: any) {
         console.log('DataBase connection failed', error.message);
-        // process.exit(1);        
+        connection.isConnected = 0; // Reset connection status
+        throw new Error(`Database connection failed: ${error.message}`);
     }
 }
 

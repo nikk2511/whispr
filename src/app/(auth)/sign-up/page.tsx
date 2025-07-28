@@ -3,7 +3,7 @@
 import { ApiResponse } from '@/types/ApiResponse';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useDebounceValue } from 'usehooks-ts';
 import * as z from 'zod';
@@ -31,6 +31,7 @@ export default function SignUpForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const debouncedUsername = useDebounceValue(username, 300);
+  const checkingRef = useRef(false); // Prevent multiple simultaneous checks
 
   const router = useRouter();
   const { toast } = useToast();
@@ -46,44 +47,132 @@ export default function SignUpForm() {
 
   useEffect(() => {
     const checkUsernameUnique = async () => {
-      if (debouncedUsername[0] && debouncedUsername[0].length > 2) {
+      const currentUsername = debouncedUsername[0];
+      
+      // Prevent multiple simultaneous checks
+      if (checkingRef.current) {
+        return;
+      }
+      
+      if (currentUsername && currentUsername.length > 2) {
+        checkingRef.current = true;
         setIsCheckingUsername(true);
         setUsernameMessage('');
+        
+        // Create an AbortController for timeout handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, 10000); // 10 second timeout
+        
         try {
           const response = await axios.get<ApiResponse>(
-            `/api/check-username-unique?username=${debouncedUsername[0]}`
+            `/api/check-username-unique?username=${currentUsername}`,
+            {
+              signal: controller.signal,
+              timeout: 10000 // 10 second timeout
+            }
           );
+          clearTimeout(timeoutId);
           setUsernameMessage(response.data.message);
         } catch (error) {
+          clearTimeout(timeoutId);
           const axiosError = error as AxiosError<ApiResponse>;
-          setUsernameMessage(
-            axiosError.response?.data.message ?? 'Error checking username'
-          );
+          
+          if (axios.isCancel(error)) {
+            setUsernameMessage('Username check timed out. Please try again.');
+          } else {
+            setUsernameMessage(
+              axiosError.response?.data.message ?? 'Error checking username. Please try again.'
+            );
+          }
         } finally {
+          checkingRef.current = false;
           setIsCheckingUsername(false);
         }
+      } else {
+        setUsernameMessage('');
+        setIsCheckingUsername(false);
+        checkingRef.current = false;
       }
     };
+    
     checkUsernameUnique();
-  }, [debouncedUsername]);
+  }, [debouncedUsername[0]]); // Fixed: only depend on the actual debounced value, not the array
+
+  // Auto-reset failsafe for stuck states
+  useEffect(() => {
+    // Reset isCheckingUsername if it's been stuck for too long
+    if (isCheckingUsername) {
+      const timeout = setTimeout(() => {
+        setIsCheckingUsername(false);
+        checkingRef.current = false; // Also reset the ref
+        if (!usernameMessage) {
+          setUsernameMessage('Username check failed. Please try again.');
+        }
+      }, 15000); // 15 seconds
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isCheckingUsername]);
+
+  // Additional safeguard: Stop checking if no response after reasonable time
+  useEffect(() => {
+    if (isCheckingUsername && username.length > 2) {
+      const emergencyTimeout = setTimeout(() => {
+        setIsCheckingUsername(false);
+        checkingRef.current = false;
+        setUsernameMessage('Check timed out. Please try a different username.');
+      }, 8000); // 8 seconds emergency timeout
+      
+      return () => clearTimeout(emergencyTimeout);
+    }
+  }, [isCheckingUsername, username]);
+
+  useEffect(() => {
+    // Reset isSubmitting if it's been stuck for too long
+    if (isSubmitting) {
+      const timeout = setTimeout(() => {
+        setIsSubmitting(false);
+      }, 45000); // 45 seconds
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [isSubmitting]);
 
   const onSubmit = async (data: z.infer<typeof signUpSchema>) => {
     setIsSubmitting(true);
+    
+    // Create an AbortController for timeout handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 30000); // 30 second timeout
+    
     try {
-      const response = await axios.post<ApiResponse>('/api/sign-up', data);
+      const response = await axios.post<ApiResponse>('/api/sign-up', data, {
+        signal: controller.signal,
+        timeout: 30000 // 30 second timeout
+      });
 
+      clearTimeout(timeoutId);
+      
       toast({
         title: 'Account Created! 🎉',
         description: response.data.message,
       });
 
-      router.replace(`/verify/${username}`);
+      router.replace('/sign-in');
     } catch (error) {
-      console.error('Error during sign-up:', error);
-
+      clearTimeout(timeoutId);
       const axiosError = error as AxiosError<ApiResponse>;
-      const errorMessage = axiosError.response?.data.message || 
-        'There was a problem with your sign-up. Please try again.';
+      let errorMessage = 'There was a problem with your sign-up. Please try again.';
+      
+      if (axios.isCancel(error)) {
+        errorMessage = 'Request timed out. Please check your internet connection and try again.';
+      } else if (axiosError.response?.data.message) {
+        errorMessage = axiosError.response.data.message;
+      }
 
       toast({
         title: 'Sign Up Failed',
@@ -96,16 +185,46 @@ export default function SignUpForm() {
   };
 
   const getUsernameStatus = () => {
-    if (isCheckingUsername) {
-      return { icon: Loader2, className: "animate-spin text-muted-foreground", message: "Checking..." };
+    // If currently checking and username is valid length
+    if (isCheckingUsername && username.length > 2) {
+      return { icon: null, className: "text-muted-foreground", message: "Checking availability..." };
     }
+    
+    // If username is too short, show nothing
+    if (username.length <= 2) {
+      return null;
+    }
+    
+    // If we have a positive response
     if (usernameMessage === 'Username is unique') {
       return { icon: CheckCircle, className: "text-green-500", message: "Username available!" };
     }
+    
+    // If we have an error response
     if (usernameMessage && usernameMessage !== 'Username is unique') {
       return { icon: XCircle, className: "text-red-500", message: usernameMessage };
     }
+    
+    // Default state - no icon
     return null;
+  };
+
+  const isFormValid = () => {
+    const formErrors = Object.keys(form.formState.errors).length > 0;
+    const hasUsername = username.length > 2;
+    const usernameAvailable = usernameMessage === 'Username is unique';
+    const notCheckingUsername = !isCheckingUsername;
+    const notBlocked = !checkingRef.current;
+    
+    return !formErrors && hasUsername && usernameAvailable && notCheckingUsername && notBlocked;
+  };
+
+  // Add debugging reset function
+  const resetFormState = () => {
+    setIsSubmitting(false);
+    setIsCheckingUsername(false);
+    setUsernameMessage('');
+    checkingRef.current = false; // Also reset the ref
   };
 
   return (
@@ -149,7 +268,7 @@ export default function SignUpForm() {
               transition={{ delay: 0.4 }}
               className="text-muted-foreground"
             >
-              Create your account and start your anonymous adventure
+              Create your account and start messaging anonymously right away
             </motion.p>
           </div>
 
@@ -182,12 +301,18 @@ export default function SignUpForm() {
                       {(() => {
                         const status = getUsernameStatus();
                         if (!status) return null;
-                        const StatusIcon = status.icon;
-                        return (
-                          <div className="absolute right-3 top-3">
-                            <StatusIcon className={`h-4 w-4 ${status.className}`} />
-                          </div>
-                        );
+                        
+                        // Only render icon if it exists
+                        if (status.icon) {
+                          const StatusIcon = status.icon;
+                          return (
+                            <div className="absolute right-3 top-3">
+                              <StatusIcon className={`h-4 w-4 ${status.className}`} />
+                            </div>
+                          );
+                        }
+                        
+                        return null;
                       })()}
                     </div>
                     {(() => {
@@ -220,7 +345,7 @@ export default function SignUpForm() {
                       />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      We&apos;ll send you a verification code
+                      We'll use this for your account recovery
                     </p>
                     <FormMessage />
                   </FormItem>
@@ -260,8 +385,8 @@ export default function SignUpForm() {
               >
                 <Button
                   type="submit"
-                  disabled={isSubmitting || usernameMessage !== 'Username is unique'}
-                  className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all"
+                  disabled={isSubmitting || !isFormValid()}
+                  className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center space-x-2">
@@ -284,17 +409,8 @@ export default function SignUpForm() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="mt-8 text-center space-y-4"
+            className="mt-8 text-center"
           >
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border/50"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-background text-muted-foreground">or</span>
-              </div>
-            </div>
-            
             <p className="text-muted-foreground">
               Already have an account?{' '}
               <Link 
