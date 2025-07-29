@@ -22,14 +22,49 @@ export async function GET() {
     const model = genAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
       generationConfig: {
-        temperature: 0.8,
-        topP: 0.95,
-        topK: 64,
-        maxOutputTokens: 100,
+        temperature: 1.2, // Increased for more randomness
+        topP: 0.9,
+        topK: 40,
+        maxOutputTokens: 150,
       },
     });
 
-    const result = await model.generateContent('Create 3 short anonymous message suggestions separated by ||. Each under 50 characters.');
+    // Array of different prompt themes for variety
+    const promptThemes = [
+      "motivational and encouraging anonymous messages",
+      "thoughtful and caring anonymous messages", 
+      "friendly and supportive anonymous messages",
+      "uplifting and positive anonymous messages",
+      "kind and compassionate anonymous messages",
+      "inspiring and hopeful anonymous messages",
+      "gentle and comforting anonymous messages",
+      "cheerful and optimistic anonymous messages"
+    ];
+
+    // Array of different contexts for more variety
+    const contexts = [
+      "for someone having a tough day",
+      "to brighten someone's mood", 
+      "to show someone they're appreciated",
+      "to make someone smile",
+      "to remind someone they matter",
+      "to spread positivity",
+      "to offer encouragement",
+      "to show kindness to a stranger"
+    ];
+
+    // Randomly select theme and context
+    const randomTheme = promptThemes[Math.floor(Math.random() * promptThemes.length)];
+    const randomContext = contexts[Math.floor(Math.random() * contexts.length)];
+    
+    // Add random timestamp to ensure uniqueness
+    const timestamp = new Date().getTime();
+    
+    const prompt = `Generate 3 unique ${randomTheme} ${randomContext}. Make them diverse, heartfelt, and under 50 characters each. Separate them with ||. Be creative and avoid repetitive themes. Random seed: ${timestamp}`;
+
+    console.log('Using prompt:', prompt);
+    
+    const result = await model.generateContent(prompt);
     const response = await result.response;
     const generatedText = response.text().trim();
     

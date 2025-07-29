@@ -154,9 +154,13 @@ export default function SendMessage() {
     setError(null);
     
     try {
-      const response = await axios.post('/api/suggest-messages');
+      const response = await axios.get('/api/suggest-messages');
       
-      if (response.data && response.data.message) {
+      if (response.data && response.data.suggestions && response.data.suggestions.length > 0) {
+        // Use the suggestions array directly by joining with our separator
+        setCompletion(response.data.suggestions.join('||'));
+      } else if (response.data && response.data.message) {
+        // Fallback to parsing the message field
         setCompletion(response.data.message);
       } else {
         throw new Error('No suggestions received from API');
@@ -493,6 +497,11 @@ export default function SendMessage() {
                   <Button variant="outline" size="sm" onClick={fetchSuggestedMessages} className="mt-2">
                     Try Again
                   </Button>
+                </div>
+              ) : isSuggestLoading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+                  <p className="text-sm text-muted-foreground">Loading fresh suggestions...</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3">
