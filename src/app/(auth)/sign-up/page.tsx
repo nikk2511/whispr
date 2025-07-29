@@ -98,7 +98,7 @@ export default function SignUpForm() {
     };
     
     checkUsernameUnique();
-  }, [debouncedUsername]); // Use the entire debouncedUsername dependency
+  }, [debouncedUsername[0]]); // Watch only the debounced value, not the entire array
 
   // Auto-reset failsafe for stuck states
   useEffect(() => {
