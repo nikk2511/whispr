@@ -98,7 +98,7 @@ export default function SignUpForm() {
     };
     
     checkUsernameUnique();
-  }, [debouncedUsername[0]]); // Fixed: only depend on the actual debounced value, not the array
+  }, [debouncedUsername]); // Use the entire debouncedUsername dependency
 
   // Auto-reset failsafe for stuck states
   useEffect(() => {
@@ -114,7 +114,7 @@ export default function SignUpForm() {
       
       return () => clearTimeout(timeout);
     }
-  }, [isCheckingUsername]);
+  }, [isCheckingUsername, usernameMessage]);
 
   // Additional safeguard: Stop checking if no response after reasonable time
   useEffect(() => {
@@ -345,7 +345,7 @@ export default function SignUpForm() {
                       />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      We'll use this for your account recovery
+                      We&apos;ll use this for your account recovery
                     </p>
                     <FormMessage />
                   </FormItem>
