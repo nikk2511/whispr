@@ -1,5 +1,6 @@
 export const runtime = 'nodejs';
-
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
