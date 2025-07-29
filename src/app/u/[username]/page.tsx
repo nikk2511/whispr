@@ -36,7 +36,7 @@ const parseStringMessages = (messageString: string): string[] => {
 };
 
 const initialMessageString =
-  "What's your favorite movie?||Do you have any pets?||What's your dream job?||What's something you've always wanted to try?||What makes you genuinely happy?||If you could travel anywhere, where would you go?";
+  "What&apos;s your favorite movie?||Do you have any pets?||What&apos;s your dream job?||What&apos;s something you&apos;ve always wanted to try?||What makes you genuinely happy?||If you could travel anywhere, where would you go?";
 
 export default function SendMessage() {
   const params = useParams<{ username: string }>();
